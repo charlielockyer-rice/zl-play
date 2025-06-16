@@ -13,7 +13,13 @@
       shareBoardstate
    } from '$lib/stores/player.js'
 
+   import { gameSession } from '$lib/stores/gameSession.js'
+
    const { showMessage } = getContext('boardActions')
+
+   // Make game session reactive
+   $: currentSession = $gameSession
+   $: isSessionActive = currentSession && currentSession.gameState !== 'ended'
 
    /* Game Flow */
    let turn = 0
@@ -69,21 +75,28 @@
 
       turn = 0
 
+      // Log game setup to session
+      gameSession.logAction('player1', 'gameStarted', {
+         mulligans,
+         autoMulligan: $autoMulligan,
+         deckValid
+      })
+
       publishLog('Setup' + ($autoMulligan ? ` - ${mulligans} Mulligans` : ''))
       shareBoardstate()
    }
 
    function reset () {
+      // End current game session if active
+      if (gameSession.isActive()) {
+         gameSession.endGame(null, 'reset')
+      }
+
       resetBoard()
       turn = 0
 
       share('boardReset')
       publishLog('Reset')
-   }
-
-   function startTurn () {
-      turn++
-      draw()
    }
 
    /* Misc. Actions */
@@ -97,6 +110,37 @@
    function switchVisibility () {
       pokemonHidden.update(val => !val)
       share('pokemonToggle', { hidden: pokemonHidden.get() })
+   }
+
+   /* Game Logging */
+   async function saveGame () {
+      try {
+         const filename = await gameSession.saveCurrentGame()
+         showMessage(`Game saved: ${filename}`)
+         publishLog('Game data saved to file')
+      } catch (error) {
+         showMessage('Error saving game')
+         console.error('Save game error:', error)
+      }
+   }
+
+   function declareWinner (winner) {
+      if (gameSession.isActive()) {
+         gameSession.endGame(winner, 'declared')
+         showMessage(`${winner === 'player1' ? 'You' : 'Opponent'} wins!`)
+         publishLog(`${winner === 'player1' ? 'Player 1' : 'Player 2'} declared winner`)
+      }
+   }
+
+   /* Enhanced turn tracking */
+   function startTurn () {
+      turn++
+      draw()
+      
+      // Log turn start
+      gameSession.logAction('player1', 'turnStarted', { 
+         turnNumber: turn 
+      })
    }
 
    /* Keyboard shortcuts */
@@ -132,8 +176,21 @@
       <button on:click={() => gxUsed.set(!$gxUsed)} class="toggle p-2 rounded-b-lg" class:on={$gxUsed}>GX Attack</button>
    </div>
 
+   <!-- Game Logging Section -->
+   {#if isSessionActive}
+      <div class="flex flex-col rounded-lg border border-green-400 bg-green-50">
+         <div class="text-xs text-center p-1 text-green-800 font-semibold">Game Session Active</div>
+         <button class="action-small" on:click={saveGame}>Save Game</button>
+         <div class="flex">
+            <button class="action-small flex-1 rounded-r-none" on:click={() => declareWinner('player1')}>I Win</button>
+            <button class="action-small flex-1 rounded-l-none" on:click={() => declareWinner('player2')}>Opp Wins</button>
+         </div>
+      </div>
+   {/if}
+
    <button class="action" on:click={flipCoin} title="Shortcut: F">Flip Coin</button>
    <button class="action" on:click={switchVisibility} title="Shortcut: Z">{$pokemonHidden ? 'Show' : 'Hide'} Pokémon</button>
+
    <button on:click|stopPropagation={() => settings.open()}>
       <Icon path={cog} />
    </button>
@@ -148,6 +205,14 @@
 
    button.action:disabled {
       @apply font-normal cursor-default border-gray-500 text-gray-600 bg-gray-100;
+   }
+
+   button.action-small {
+      @apply text-sm font-semibold text-white bg-green-600 px-2 py-1 rounded-lg;
+   }
+
+   button.action-small:hover {
+      @apply bg-green-700;
    }
 
    button.toggle.on {

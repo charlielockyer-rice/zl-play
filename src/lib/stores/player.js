@@ -20,10 +20,23 @@ export const {
 } = board()
 
 export function importDeck (txt, cb, rd = false) {
-   const callback = (res) => {
+   const callback = async (res) => {
       fixOld(res.cards)
       cards.set(res.cards)
       reset()
+
+      // Log deck import to game session
+      try {
+         const { gameSession } = await import('./gameSession.js')
+         gameSession.setPlayerDeck('player1', res.cards, res.name || 'Imported Deck')
+         gameSession.logAction('player1', 'deckImported', {
+            deckName: res.name || 'Imported Deck',
+            cardCount: res.cards.reduce((sum, card) => sum + card.count, 0),
+            isRandom: rd
+         })
+      } catch (e) {
+         // Silently fail if game session not available
+      }
 
       cb(res)
       share('deckLoaded', { deck: res.cards })

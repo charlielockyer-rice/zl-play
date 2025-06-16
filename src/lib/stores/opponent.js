@@ -1,6 +1,6 @@
 import { board } from './custom/board.js'
 import { slot } from './custom/cards.js'
-import { socket } from './connection.js'
+import { socket, react } from './connection.js'
 import { discardStadium } from './player.js'
 
 export const {
@@ -87,7 +87,7 @@ socket.on('boardState', ({ cards, board }) => {
    if (board.handRevealed) handRevealed.set(true)
 })
 
-socket.on('deckLoaded', ({ deck }) => {
+react('deckLoaded', ({ deck }) => {
    reload(deck)
 })
 

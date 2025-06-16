@@ -101,18 +101,55 @@ socket.on('chatMessage', ({ message, type }) => {
 /* Game State */
 const env = import.meta.env.VITE_ENV
 
+// Action logging - import only when needed to avoid circular dependencies
+let gameSession = null
+async function getGameSession() {
+   if (!gameSession) {
+      const module = await import('./gameSession.js')
+      gameSession = module.gameSession
+   }
+   return gameSession
+}
+
 export function share (event, data) {
    if (env === 'dev') console.log('Sharing event ' + event, data)
+   
+   // Log outgoing action to game session
+   getGameSession().then(session => {
+      session.logAction('player1', event, data)
+   }).catch(() => {
+      // Silently fail if game session not available
+   })
+   
    socket.emit(event, {
       ...data, room: room.get()
    })
 }
 
 export function react (event, cb) {
-   socket.on(event, cb)
+   // Wrap callback to log incoming actions
+   const wrappedCallback = (...args) => {
+      // Log incoming action to game session
+      getGameSession().then(session => {
+         const data = args[0] || {}
+         session.logAction('player2', event, data)
+         
+         // Special handling for opponent deck data
+         if (event === 'deckLoaded' && data.deck) {
+            session.setPlayerDeck('player2', data.deck, 'Opponent Deck')
+         }
+      }).catch(() => {
+         // Silently fail if game session not available
+      })
+      
+      // Call original callback
+      return cb(...args)
+   }
+   
+   socket.on(event, wrappedCallback)
 
    return () => {
-      socket.off(event, cb)
+      socket.off(event, wrappedCallback)
    }
 }
 
