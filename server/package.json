@@ -1,0 +1,23 @@
+{
+  "name": "pokemon-tcg-logging-server",
+  "version": "1.0.0",
+  "description": "Socket.IO logging server for Pokemon TCG game sessions",
+  "main": "enhanced-server.js",
+  "scripts": {
+    "start": "node enhanced-server.js",
+    "dev": "node enhanced-server.js",
+    "start:simple": "node simple-logging-server.js",
+    "start:enhanced": "node enhanced-server.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev:kit": "NODE_ENV=dev svelte-kit dev --port 5173 --host 127.0.0.1"
+  },
+  "keywords": ["pokemon", "tcg", "logging", "socket.io", "postgresql"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.7.4",
+    "pg": "^8.11.3",
+    "cors": "^2.8.5"
+  }
+}

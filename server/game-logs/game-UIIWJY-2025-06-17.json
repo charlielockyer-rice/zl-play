@@ -1,0 +1,20 @@
+[
+  {
+    "timestamp": "2025-06-17T17:48:05.251Z",
+    "roomId": "UIIWJY",
+    "playerId": "7CXzxVZ_pdXRbyinAAAC",
+    "action": "ROOM_CREATED",
+    "data": {
+      "roomId": "UIIWJY"
+    }
+  },
+  {
+    "timestamp": "2025-06-17T17:48:37.492Z",
+    "roomId": "UIIWJY",
+    "playerId": "7CXzxVZ_pdXRbyinAAAC",
+    "action": "PLAYER_DISCONNECTED",
+    "data": {
+      "roomId": "UIIWJY"
+    }
+  }
+]

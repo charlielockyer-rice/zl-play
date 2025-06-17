@@ -1,0 +1,24 @@
+[
+  {
+    "timestamp": "2025-06-17T17:53:09.243Z",
+    "roomId": "JHWEIB",
+    "playerId": "C5rsXxS4p814yJg4AAAG",
+    "action": "CHAT_MESSAGE",
+    "data": {
+      "message": "Player 1 declared winner",
+      "type": "log",
+      "room": "JHWEIB"
+    }
+  },
+  {
+    "timestamp": "2025-06-17T17:53:14.587Z",
+    "roomId": "JHWEIB",
+    "playerId": "C5rsXxS4p814yJg4AAAG",
+    "action": "CHAT_MESSAGE",
+    "data": {
+      "message": "Game data saved to file",
+      "type": "log",
+      "room": "JHWEIB"
+    }
+  }
+]

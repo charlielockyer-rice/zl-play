@@ -12,8 +12,9 @@ function limitlessImage (card, size) {
 
    } else {
       let lang = card.language || 'en'
+      if (!card.number) return ''
 
-      const num = card.number.replace(/^(\d{1,2})(a|b)?$/, (_, p1, p2) => {
+      const num = card.number.replace(/^(\d{1,3})(a|b)?$/, (_, p1, p2) => {
          return p1.padStart(3, '0') + (p2 || '')
       })
 

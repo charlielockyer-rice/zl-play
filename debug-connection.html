@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Socket.IO Connection</title>
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+</head>
+<body>
+    <h1>Socket.IO Debug Test</h1>
+    <div id="status">Not connected</div>
+    <button onclick="testCreateRoom()">Test Create Room</button>
+    <div id="logs"></div>
+
+    <script>
+        const socket = io('http://localhost:3001', {
+            transports: ['websocket'],
+            autoConnect: false
+        });
+
+        const statusDiv = document.getElementById('status');
+        const logsDiv = document.getElementById('logs');
+
+        function log(message) {
+            console.log(message);
+            logsDiv.innerHTML += '<div>' + new Date().toLocaleTimeString() + ': ' + message + '</div>';
+        }
+
+        socket.on('connect', () => {
+            statusDiv.textContent = 'Connected: ' + socket.id;
+            log('Connected to server');
+        });
+
+        socket.on('disconnect', () => {
+            statusDiv.textContent = 'Disconnected';
+            log('Disconnected from server');
+        });
+
+        socket.on('createdRoom', (data) => {
+            log('Room created: ' + data.roomId);
+        });
+
+        socket.on('error', (error) => {
+            log('Error: ' + error.message);
+        });
+
+        function testCreateRoom() {
+            log('Attempting to connect...');
+            socket.connect();
+            
+            socket.on('connect', () => {
+                log('Sending createRoom event...');
+                socket.emit('createRoom');
+            });
+        }
+    </script>
+</body>
+</html> 

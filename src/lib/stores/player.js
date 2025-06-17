@@ -28,8 +28,13 @@ export function importDeck (txt, cb, rd = false) {
       // Log deck import to game session
       try {
          const { gameSession } = await import('./gameSession.js')
-         gameSession.setPlayerDeck('player1', res.cards, res.name || 'Imported Deck')
-         gameSession.logAction('player1', 'deckImported', {
+         const playerId = get(gameSession).playerId;
+         if (!playerId) {
+            console.error("Cannot log deck import: player ID not found in game session.");
+            return;
+         }
+         gameSession.setPlayerDeck(playerId, res.cards, res.name || 'Imported Deck')
+         gameSession.logAction(playerId, 'deckImported', {
             deckName: res.name || 'Imported Deck',
             cardCount: res.cards.reduce((sum, card) => sum + card.count, 0),
             isRandom: rd
@@ -368,4 +373,9 @@ react('opponentJoined', () => {
 react('oppDamageUpdated', ({ slotId, damage }) => {
    const slot = findSlot(slotId)
    slot.damage.set(damage)
+})
+
+react('requestBoardState', ({ seq }) => {
+   // Send a deterministic full board snapshot to the server
+   share('boardState', { seq, board: exportBoard() })
 })
