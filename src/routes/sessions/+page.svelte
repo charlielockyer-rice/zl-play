@@ -28,7 +28,7 @@
     <ul class="divide-y divide-gray-200">
       {#each sessions as session}
         <li class="py-4">
-          <a href={`/replay/${session.session_id}`} class="block hover:bg-gray-50 p-2 rounded-md">
+          <a href={`/replay/${session.room_id}`} class="block hover:bg-gray-50 p-2 rounded-md">
             <p class="font-semibold">Session ID: {session.session_id}</p>
             <p>Room ID: {session.room_id}</p>
             <p>Start Time: {new Date(session.start_time).toLocaleString()}</p>

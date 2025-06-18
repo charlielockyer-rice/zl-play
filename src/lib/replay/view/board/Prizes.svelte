@@ -9,7 +9,7 @@
 <div class="prizes-container">
    <Vertical>
       <div class="prizes p-1 grid grid-cols-2 gap-1 w-fit">
-         {#each prizes as card (card.id)}
+         {#each prizes as card, index (card.id || card._id || index)}
             <Card {card} />
          {/each}
       </div>

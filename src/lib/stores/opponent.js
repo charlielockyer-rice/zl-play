@@ -87,9 +87,8 @@ socket.on('boardState', ({ cards, board }) => {
    if (board.handRevealed) handRevealed.set(true)
 })
 
-react('deckLoaded', ({ deck }) => {
-   reload(deck)
-})
+// Note: deckLoaded should only be handled server-side for proper room management
+// The opponent's deck will be shared via boardState events instead
 
 socket.on('boardReset', () => {
    reset()

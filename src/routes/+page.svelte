@@ -20,9 +20,13 @@
    Beta <Icon path={github} size={512}></Icon>
 </a>
 
-<DeckInput />
-
-<div class="flex gap-2">
-   <Board />
-   <Connection />
+<div id="sidebar">
+	<DeckInput />
 </div>
+
+<main>
+	<div class="flex gap-2">
+		<Board />
+		<Connection />
+	</div>
+</main>

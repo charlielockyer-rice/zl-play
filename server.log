@@ -2,8 +2,187 @@
 🗄️  Using PostgreSQL database
 🌐 API available at: http://localhost:3001/api/sessions
 🗄️  Connected to PostgreSQL database
-📑 Replay request for 9bb4f478-b13e-49c1-a8bf-aa360d4ef1ef seqParam null
-🎯 Resolved dbId 9bb4f478-b13e-49c1-a8bf-aa360d4ef1ef
-🔢 upperSeq 58
-📸 snapshot rows 1
-🎬 events rows 8
+✅ [DIAGNOSTIC] Replay requested for room: 0KZLQM
+✅ [DIAGNOSTIC] Found session ID: 3e4d3fa5-d9c3-42f9-b5dd-0fb4ecf78725
+✅ [DIAGNOSTIC] Found 33 events.
+✅ [DIAGNOSTIC] Found deck from DECKSETUP: 26 cards
+✅ [DIAGNOSTIC] Found snapshot: No
+✅ [DIAGNOSTIC] Sending sessions to client: [
+  {
+    "session_id": "3e4d3fa5-d9c3-42f9-b5dd-0fb4ecf78725",
+    "room_id": "0KZLQM",
+    "start_time": "2025-06-18T20:41:01.210Z",
+    "game_state": "ended",
+    "action_count": 33
+  },
+  {
+    "session_id": "bfad5813-86ba-4747-9b28-39c75788db74",
+    "room_id": "207Y30",
+    "start_time": "2025-06-18T20:37:56.560Z",
+    "game_state": "ended",
+    "action_count": 25
+  },
+  {
+    "session_id": "e9247e9b-1e0c-4ee8-8c7b-5a7a21b54a2f",
+    "room_id": "9W417P",
+    "start_time": "2025-06-18T20:36:22.020Z",
+    "game_state": "ended",
+    "action_count": 39
+  },
+  {
+    "session_id": "8ba4e07a-8d94-4e26-ac10-fa52e57f6505",
+    "room_id": "S8ASAH",
+    "start_time": "2025-06-18T20:31:23.484Z",
+    "game_state": "ended",
+    "action_count": 32
+  },
+  {
+    "session_id": "ab4b0a11-f56f-45e4-9f60-c51bcfade0b5",
+    "room_id": "DAKWR2",
+    "start_time": "2025-06-18T20:20:17.530Z",
+    "game_state": "ended",
+    "action_count": 32
+  },
+  {
+    "session_id": "d75e20e8-4f29-48d6-8f50-217bb43e8f20",
+    "room_id": "IQ67PM",
+    "start_time": "2025-06-18T20:03:45.140Z",
+    "game_state": "ended",
+    "action_count": 13
+  },
+  {
+    "session_id": "66168f3b-efa0-4040-ad88-34cc05230380",
+    "room_id": "EEWDBY",
+    "start_time": "2025-06-18T19:50:02.697Z",
+    "game_state": "ended",
+    "action_count": 26
+  },
+  {
+    "session_id": "e6d87682-c236-4f96-9c6a-04b33dff0cdf",
+    "room_id": "AWAIQ3",
+    "start_time": "2025-06-18T19:47:52.229Z",
+    "game_state": "ended",
+    "action_count": 5
+  },
+  {
+    "session_id": "266e1647-87f1-402c-b489-bc01d448f9aa",
+    "room_id": "BG6GA4",
+    "start_time": "2025-06-18T19:44:35.837Z",
+    "game_state": "ended",
+    "action_count": 4
+  },
+  {
+    "session_id": "7c4880e2-94ee-4104-bad1-6532fa59d6d7",
+    "room_id": "OXINSO",
+    "start_time": "2025-06-18T19:40:23.969Z",
+    "game_state": "ended",
+    "action_count": 6
+  },
+  {
+    "session_id": "7457878b-30ea-440a-9893-16ea85385525",
+    "room_id": "C8XAYD",
+    "start_time": "2025-06-18T19:30:33.603Z",
+    "game_state": "waiting",
+    "action_count": 7
+  },
+  {
+    "session_id": "c7502048-8e04-473d-9e64-42d8cb1a2d0d",
+    "room_id": "CZVQBT",
+    "start_time": "2025-06-18T19:30:29.228Z",
+    "game_state": "ended",
+    "action_count": 6
+  },
+  {
+    "session_id": "cf3911aa-5086-4035-8501-77a24cc14ca3",
+    "room_id": "NOLIZ6",
+    "start_time": "2025-06-18T19:24:21.068Z",
+    "game_state": "waiting",
+    "action_count": 3
+  },
+  {
+    "session_id": "5e44fb38-32c8-4aee-9295-28dcd95e2625",
+    "room_id": "YHIVN0",
+    "start_time": "2025-06-18T19:21:44.642Z",
+    "game_state": "ended",
+    "action_count": 46
+  },
+  {
+    "session_id": "f874de7f-473c-429b-8aec-95f1d363e911",
+    "room_id": "LN4MWH",
+    "start_time": "2025-06-18T19:20:10.380Z",
+    "game_state": "ended",
+    "action_count": 2
+  },
+  {
+    "session_id": "3ed2cb37-5e9a-46c3-bf45-9cef65763c4e",
+    "room_id": "89AQ49",
+    "start_time": "2025-06-18T19:20:10.192Z",
+    "game_state": "waiting",
+    "action_count": 1
+  },
+  {
+    "session_id": "846ab789-6bb3-4172-bd3e-7214854a5919",
+    "room_id": "I4TJCO",
+    "start_time": "2025-06-18T19:20:09.981Z",
+    "game_state": "waiting",
+    "action_count": 1
+  },
+  {
+    "session_id": "783d8ffb-1651-41c6-b087-384eb54f25ea",
+    "room_id": "0PZUGR",
+    "start_time": "2025-06-18T19:20:09.570Z",
+    "game_state": "waiting",
+    "action_count": 1
+  },
+  {
+    "session_id": "eb97c528-ff55-4fef-973c-bf2a8efcee30",
+    "room_id": "0CYD85",
+    "start_time": "2025-06-18T19:20:05.947Z",
+    "game_state": "waiting",
+    "action_count": 1
+  },
+  {
+    "session_id": "e0debb6a-5277-4a47-b18e-0fe14791e3f8",
+    "room_id": "BHJ6N9",
+    "start_time": "2025-06-18T19:19:58.976Z",
+    "game_state": "waiting",
+    "action_count": 2
+  }
+]
+✅ [DIAGNOSTIC] Replay requested for room: 0KZLQM
+✅ [DIAGNOSTIC] Found session ID: 3e4d3fa5-d9c3-42f9-b5dd-0fb4ecf78725
+✅ [DIAGNOSTIC] Found 33 events.
+✅ [DIAGNOSTIC] Found deck from DECKSETUP: 26 cards
+✅ [DIAGNOSTIC] Found snapshot: No
+✅ [DIAGNOSTIC] Replay requested for room: 0KZLQM
+✅ [DIAGNOSTIC] Found session ID: 3e4d3fa5-d9c3-42f9-b5dd-0fb4ecf78725
+✅ [DIAGNOSTIC] Found 33 events.
+✅ [DIAGNOSTIC] Found deck from DECKSETUP: 26 cards
+✅ [DIAGNOSTIC] Found snapshot: No
+✅ [DIAGNOSTIC] Replay requested for room: 0KZLQM
+✅ [DIAGNOSTIC] Found session ID: 3e4d3fa5-d9c3-42f9-b5dd-0fb4ecf78725
+✅ [DIAGNOSTIC] Found 33 events.
+✅ [DIAGNOSTIC] Found deck from DECKSETUP: 26 cards
+✅ [DIAGNOSTIC] Found snapshot: No
+✅ [DIAGNOSTIC] Replay requested for room: 0KZLQM
+✅ [DIAGNOSTIC] Found session ID: 3e4d3fa5-d9c3-42f9-b5dd-0fb4ecf78725
+✅ [DIAGNOSTIC] Found 33 events.
+✅ [DIAGNOSTIC] Found deck from DECKSETUP: 26 cards
+✅ [DIAGNOSTIC] Found snapshot: No
+✅ [DIAGNOSTIC] Replay requested for room: 0KZLQM
+✅ [DIAGNOSTIC] Found session ID: 3e4d3fa5-d9c3-42f9-b5dd-0fb4ecf78725
+✅ [DIAGNOSTIC] Found 33 events.
+✅ [DIAGNOSTIC] Found deck from DECKSETUP: 26 cards
+✅ [DIAGNOSTIC] Found snapshot: No
+✅ [DIAGNOSTIC] Replay requested for room: 0KZLQM
+✅ [DIAGNOSTIC] Found session ID: 3e4d3fa5-d9c3-42f9-b5dd-0fb4ecf78725
+✅ [DIAGNOSTIC] Found 33 events.
+✅ [DIAGNOSTIC] Found deck from DECKSETUP: 26 cards
+✅ [DIAGNOSTIC] Found snapshot: No
+✅ [DIAGNOSTIC] Replay requested for room: 0KZLQM
+✅ [DIAGNOSTIC] Found session ID: 3e4d3fa5-d9c3-42f9-b5dd-0fb4ecf78725
+✅ [DIAGNOSTIC] Found 33 events.
+✅ [DIAGNOSTIC] Found deck from DECKSETUP: 26 cards
+✅ [DIAGNOSTIC] Found snapshot: No
+🛑 Received SIGTERM, shutting down gracefully...
+✅ Server shutdown complete

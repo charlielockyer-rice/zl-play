@@ -2,6 +2,8 @@
    // This component is now a simple layout container for the replay view.
    // All state is derived from the `replayState` store within the child components.
 
+   import { replayState } from '$lib/stores/replayState.js';
+
    import Hand from './board/Hand.svelte'
    import Deck from './board/Deck.svelte'
    import Prizes from './board/Prizes.svelte'
@@ -23,35 +25,18 @@
    import OppTable from './opponent/Temp.svelte'
 
    // All dialogs and interactive elements have been removed as they are not used in replay.
+
+   let player, opponent;
+   $: if ($replayState) {
+      player = $replayState.player;
+      opponent = $replayState.opponent;
+   }
 </script>
 
-<div class="h-screen overflow-y-auto flex-1" on:contextmenu|capture|preventDefault>
-   <div class="game flex flex-col h-full max-w-[1920px] m-auto select-none relative">
-
-      <div class="gameboard min-h-0 relative flex-1">
-
-         <!-- Player's zones -->
-         <div class="bench">
-            <Bench />
-         </div>
-         <div class="prizes">
-            <Prizes />
-         </div>
-         <div class="deck">
-            <Deck />
-         </div>
-         <div class="discard">
-            <Discard />
-         </div>
-         <div class="lz">
-            <LostZone />
-         </div>
-         <div class="play">
-            <Table />
-         </div>
-         <div class="stadium">
-            <Stadium />
-         </div>
+{#if $replayState}
+<div class="board-wrapper">
+   <div class="game">
+      <div class="gameboard">
 
          <div class="hand2 flip">
             <OppHand />
@@ -81,8 +66,16 @@
             <OppTable />
          </div>
 
+         <div class="play">
+            <Table />
+         </div>
+
          <div class="stadium2 flip">
             <OppStadium />
+         </div>
+
+         <div class="stadium">
+            <Stadium />
          </div>
 
          <div class="active">
@@ -94,76 +87,192 @@
             </div>
          </div>
 
-         <div class="hand">
-            <Hand />
+         <div class="bench">
+            <Bench />
          </div>
 
-         <!-- Opponent's zones -->
-         <div class="prizes2">
-            <OppPrizes />
+         <div class="lz">
+            <LostZone />
          </div>
-         <div class="deck2">
-            <OppDeck />
+
+         <div class="discard">
+            <Discard />
          </div>
-         <div class="discard2">
-            <OppDiscard />
+
+         <div class="deck">
+            <Deck />
          </div>
-         <div class="lz2">
-            <OppLostZone />
+
+         <div class="prizes">
+            <Prizes />
          </div>
-         <div class="bench2">
-            <OppBench />
-         </div>
-         <div class="play2">
-            <OppTable />
-         </div>
-         <div class="stadium2">
-            <OppStadium />
+
+         <div class="hand">
+            <Hand />
          </div>
       </div>
    </div>
 </div>
+{/if}
 
 <style>
-.gameboard {
-   transform: scale(var(--board-scale, 1));
-   transform-origin: top center;
-}
-.active, .stadium, .play, .bench, .deck, .discard, .prizes, .lz, .hand {
-   position: absolute;
-   display: flex;
-}
-.active1 {
-   width: 100%;
-   height: 100%;
-}
-.active2 {
-   width: 100%;
-   height: 100%;
-}
-.flip {
-   transform: rotate(180deg);
-}
+   .board-wrapper {
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+   }
 
-/* Player Side Layout */
-.hand { position: absolute; right: 0; bottom: 0; display: flex; }
-.active { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; }
-.bench { position: absolute; bottom: 18%; left: 50%; transform: translateX(-50%); display: flex; }
-.stadium { position: absolute; bottom: 35%; left: 2%; display: flex; }
-.prizes { position: absolute; top: 35%; left: 2%; display: flex; }
-.deck { position: absolute; bottom: 35%; right: 2%; display: flex; }
-.discard { position: absolute; bottom: 18%; right: 2%; display: flex; }
-.lz { position: absolute; top: 18%; right: 2%; display: flex; }
-.play { position: absolute; top: 35%; left: 50%; transform: translateX(-50%); display: flex; }
+   .game {
+      --card-width: 105px;
+      --card-height: 145px;
+      height: 100%;
+      width: 100%;
+      max-width: 1400px;
+      margin: 0 auto;
+      position: relative;
+   }
 
-/* Opponent Side Layout (flipped) */
-.hand2 { position: absolute; right: 0; bottom: 0; transform: rotate(180deg); display: flex; }
-.bench2 { position: absolute; bottom: 18%; left: 50%; transform: translateX(-50%) rotate(180deg); display: flex; }
-.active2 { /* position is handled by parent .active */ }
-.stadium2 { position: absolute; bottom: 35%; left: 2%; transform: rotate(180deg); display: flex; }
-.prizes2 { position: absolute; top: 35%; left: 2%; transform: rotate(180deg); display: flex; }
-.deck2 { position: absolute; bottom: 35%; right: 2%; transform: rotate(180deg); display: flex; }
-.discard2 { position: absolute; bottom: 18%; right: 2%; transform: rotate(180deg); display: flex; }
-.lz2 { position: absolute; top: 18%; right: 2%; transform: rotate(180deg); display: flex; }
-.play2 { position: absolute; top: 35%; left: 50%; transform: translateX(-50%) rotate(180deg); display: flex; }
+   .game :global(img.card) {
+      filter: drop-shadow(1px 1px 2px var(--shadow-color));
+   }
+
+   .gameboard {
+      display: grid;
+      grid-template-columns: 0.8fr 0.8fr 1fr 1.5fr 1fr 0.8fr 0.8fr;
+      grid-template-rows: 0.9fr 1fr 1fr 1fr 1fr 0.9fr;
+      grid-template-areas:
+         "hand2 hand2 hand2 hand2 hand2 hand2 hand2"
+         ". discard2 bench2 bench2 bench2 prizes2 prizes2"
+         "lz2 deck2 stadium active play prizes2 prizes2"
+         "prizes prizes stadium active play deck lz"
+         "prizes prizes bench bench bench discard ."
+         "hand hand hand hand hand hand hand";
+      gap: 0.5rem;
+      height: 100%;
+      padding: 0.5rem;
+      box-sizing: border-box;
+   }
+
+   /* https://css-tricks.com/preventing-a-grid-blowout/ */
+   .gameboard > div {
+      min-width: 0;
+   }
+
+   .gameboard > div > :global(div:first-child) {
+      @apply w-full h-full;
+   }
+
+   .prizes {
+      grid-area: prizes;
+   }
+
+   .stadium {
+      grid-area: stadium;
+      z-index: 10;
+      pointer-events: none;
+   }
+
+   .active {
+      grid-area: active;
+      display: grid;
+      grid-template-rows: 1fr 1fr;
+      position: relative;
+   }
+
+   .active1 {
+      grid-row: 2;
+      grid-column: 1;
+   }
+
+   .active2 {
+      grid-row: 1;
+      grid-column: 1;
+   }
+
+   .active:before {
+      content: ' ';
+      display: block;
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0.5;
+      background-image: url('/pokeball.svg');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      pointer-events: none;
+   }
+
+   .active > div > :global(div:first-child) {
+      @apply w-full h-full;
+   }
+
+   .bench {
+      grid-area: bench;
+   }
+
+   .lz {
+      grid-area: lz;
+   }
+
+   .deck {
+      grid-area: deck;
+   }
+
+   .discard {
+      grid-area: discard;
+   }
+
+   .hand {
+      grid-area: hand;
+      border-top: 2px solid var(--text-color);
+   }
+
+   .play {
+      grid-area: play;
+      z-index: 11;
+   }
+
+   .prizes2 {
+      grid-area: prizes2;
+   }
+
+   .bench2 {
+      grid-area: bench2;
+   }
+
+   .lz2 {
+      grid-area: lz2;
+   }
+
+   .deck2 {
+      grid-area: deck2;
+   }
+
+   .discard2 {
+      grid-area: discard2;
+   }
+
+   .hand2 {
+      grid-area: hand2;
+      border-top: 2px solid var(--text-color);
+   }
+
+   .play2 {
+      grid-area: play;
+   }
+
+   .stadium2 {
+      grid-area: stadium;
+   }
+
+   .flip {
+      transform: scale(-1, -1);
+   }
+
+   .flip :global(img.card) {
+      filter: drop-shadow(-1px -1px 2px var(--shadow-color));
+   }
 </style>

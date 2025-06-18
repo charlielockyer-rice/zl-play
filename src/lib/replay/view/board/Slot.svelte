@@ -31,12 +31,12 @@
          class="card pokemon relative z-10">
    {/if}
 
-   {#each energy as nrg, i (nrg.id)}
+   {#each energy as nrg, i (nrg.id || nrg._id || `energy_${i}`)}
       <img src="{cardImage(nrg, 'xs')}" alt="{nrg.name}" class="card absolute" draggable=false
          style="bottom: calc(17px * var(--card-scale)); left: calc({(i + 1)* 25}px * var(--card-scale)); z-index: {9 - i}">
    {/each}
 
-   {#each trainer as tool, i (tool.id)}
+   {#each trainer as tool, i (tool.id || tool._id || `trainer_${i}`)}
       <img src="{cardImage(tool, 'xs')}" alt="{tool.name}" class="card absolute" draggable=false
          style="bottom: calc(34px * var(--card-scale)); left: calc({energy.length * 25 + (i + 1) * 35}px * var(--card-scale)); z-index: {9 - i - energy.length}">
    {/each}

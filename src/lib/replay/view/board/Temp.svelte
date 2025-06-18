@@ -11,7 +11,7 @@
 
       {#if table.length > 0}
          <img class="card" src="{cardImage(table[0], 'xs')}" alt={table[0].name} draggable="false">
-         {#each table as card, i (card.id)}
+         {#each table as card, i (card.id || card._id || `temp_${i}`)}
             {#if i >= 1}
                <img class="card absolute" src="{cardImage(card, 'xs')}" alt={card.name} draggable="false"
                   style="bottom: -{i * 35}px; left: {i % 2 !== 0 ? 20 : 0}px">

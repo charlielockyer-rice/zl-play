@@ -1,14 +1,19 @@
 <script>
-   import Slot from './Slot.svelte'
-   import { replayState } from '$lib/stores/replayState.js';
+	import Slot from './Slot.svelte';
+	import { replayState } from '$lib/stores/replayState.js';
 
-   $: bench = $replayState?.player?.bench || [];
+	$: bench = $replayState?.player?.bench || [];
 </script>
 
-<div class="p-1 flex items-center focus:outline-none">
-   <div class="flex gap-[var(--scaled-rem)] min-w-0">
-      {#each bench as slot (slot.id)}
-         <Slot {slot} />
-      {/each}
-   </div>
+<div class="bench-container flex gap-2 justify-center items-end h-full">
+	{#each bench as slot, index (slot.id || `bench_${index}`)}
+		<Slot {slot} />
+	{/each}
+	
+	<!-- Show empty bench slots -->
+	{#each Array(5 - bench.length) as _, i}
+		<div class="empty-slot">
+			<!-- Empty bench slot -->
+		</div>
+	{/each}
 </div>

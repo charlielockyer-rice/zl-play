@@ -1,14 +1,14 @@
 <script>
-   import { replayState } from '$lib/stores/replayState.js';
-   import Slot from './Slot.svelte'
+	import Slot from './Slot.svelte';
+	import { replayState } from '$lib/stores/replayState.js';
 
-   $: active = $replayState?.player?.active
+	$: active = $replayState?.player?.active || null;
 </script>
 
-<div>
-   <div class="h-full flex justify-center items-center">
-      {#if active}
-         <Slot slot={active} />
-      {/if}
-   </div>
-</div>
+{#if active}
+	<Slot slot={active} />
+{:else}
+	<div class="empty-active">
+		<!-- Empty active slot -->
+	</div>
+{/if}

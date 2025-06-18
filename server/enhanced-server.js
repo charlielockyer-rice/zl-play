@@ -4,6 +4,7 @@ const { Server } = require('socket.io');
 const { Pool } = require('pg');
 const crypto = require('crypto');
 const cors = require('cors');
+const { v4: uuidv4 } = require('uuid');
 
 // Create Express app and HTTP server
 const app = express();
@@ -86,7 +87,14 @@ async function logGameAction(sessionId, playerId, actionType, actionData, socket
   }
   
   const timestamp = new Date();
-  const slimmedData = slimActionData(actionData);
+  
+  // For DECKSETUP events, preserve the full deck data - it's critical for replay
+  let dataToStore = actionData;
+  if (actionType.toUpperCase() !== 'DECKSETUP') {
+    dataToStore = slimActionData(actionData);
+  } else {
+    console.log(`🃏 [DECK] Preserving full deck data for ${actionType} (${actionData?.deck?.length || 0} cards)`);
+  }
   
   try {
     // Atomically increment and get the new sequence number
@@ -99,7 +107,7 @@ async function logGameAction(sessionId, playerId, actionType, actionData, socket
     await pool.query(
       `INSERT INTO game_actions (session_id, timestamp, sequence_number, player_id, action_type, action_data)
        VALUES ($1, $2, $3, $4, $5, $6)`,
-      [sessionId, timestamp, sequenceNumber, playerId, actionType, slimmedData]
+      [sessionId, timestamp, sequenceNumber, playerId, actionType, dataToStore]
     );
     
     // Update in-memory session action count for snapshot logic
@@ -142,38 +150,56 @@ io.on('connection', (socket) => {
   
   // Create room
   socket.on('createRoom', async () => {
-    console.log(`🎮 Creating room for ${socket.id}`);
-    const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-    playerRooms.set(socket.id, roomId);
-    
-    socket.join(roomId);
-    socket.emit('createdRoom', { roomId });
-    
-    // Create game session in database
+    const roomId = generateRoomId();
+    const sessionId = uuidv4(); // This is the internal DB ID
+
     try {
-      const friendlySessionId = Math.random().toString(36).substring(2, 8).toUpperCase();
-      const result = await pool.query(
-        `INSERT INTO game_sessions (session_id, room_id, start_time, game_state, action_count) 
-         VALUES ($1, $2, $3, 'active', 0) RETURNING id`,
-        [friendlySessionId, roomId, new Date()]
+      // Store the new session in the database
+      await pool.query(
+        'INSERT INTO game_sessions (id, session_id, room_id, game_state, start_time) VALUES ($1, $2, $3, $4, $5)',
+        [sessionId, sessionId, roomId, 'waiting', new Date()]
       );
-      
-      const dbSessionId = result.rows[0].id;
+
+      // Creator of the room joins the socket.io room
+      socket.join(roomId);
+
+      // Store the session in memory
       activeSessions.set(roomId, {
-        id: dbSessionId,
-        sessionId: friendlySessionId,
-        roomId,
-        startedAt: new Date(),
-        actionCount: 0,
-        players: [],
-        nextSnapshotAt: 50 // first snapshot at sequence 50
+        id: sessionId,
+        players: [socket.id],
+        roomId: roomId,
+        deckSetupLogged: false
       });
-      
-      console.log(`🎮 Room created: ${roomId} with session ${dbSessionId}`);
+      playerRooms.set(socket.id, roomId);
+
       // Use the DATABASE ID (UUID) for logging, not the friendly ID
-      await logGameAction(dbSessionId, socket.id, 'ROOM_CREATED', { roomId }, roomId);
+      await logGameAction(sessionId, socket.id, 'ROOM_CREATED', { roomId }, roomId);
+
+      // Process any pending deck data now that room is created
+      if (socket.pendingDeckData && socket.pendingDeckData.length > 0) {
+        console.log(`🔄 [DIAGNOSTIC] Processing pending deck data for player ${socket.id} in room ${roomId} (${socket.pendingDeckData.length} cards)`);
+        await logGameAction(sessionId, socket.id, 'DECKSETUP', { deck: socket.pendingDeckData }, roomId);
+        
+        // Mark deck setup as logged for this session
+        const session = activeSessions.get(roomId);
+        if (session) {
+          session.deckSetupLogged = true;
+        }
+        
+        // Clear the pending data since it's now processed
+        delete socket.pendingDeckData;
+        console.log(`✅ [DIAGNOSTIC] Deck setup logged successfully for room ${roomId}`);
+      }
+
+      // Respond to the creator
+      socket.emit('createdRoom', {
+        room: roomId,
+        playerId: 1
+      });
+      console.log(`✅ [DIAGNOSTIC] Room created and saved. Friendly ID: ${roomId}, DB ID: ${sessionId}`);
     } catch (error) {
-      console.error('❌ Failed to create game session:', error.message);
+      console.error('❌ [DIAGNOSTIC] Failed to create room in DB:', error.message, error.stack);
+      socket.emit('createRoomError', { message: 'Database error' });
     }
   });
 
@@ -185,23 +211,32 @@ io.on('connection', (socket) => {
     console.log(`🎮 Player ${socket.id} joining room ${roomId}`);
     const session = activeSessions.get(roomId);
 
-    if (session) {
+    if (session && session.players.length < 2) {
+      // Add player to the Socket.IO room
       socket.join(roomId);
+
+      // Add player to the server-side session tracker
+      session.players.push(socket.id);
       playerRooms.set(socket.id, roomId);
 
-      // Notify existing players that a new player has joined
-      socket.to(roomId).emit('playerJoined', { playerId: socket.id });
-      
-      // Add the new player to the session *after* notifying others
-      if (!session.players.includes(socket.id)) {
-        session.players.push(socket.id);
-      }
-      
+      // Log the join event to the database
       await logGameAction(session.id, socket.id, 'PLAYER_JOINED', { roomId }, roomId);
+      console.log(`🙋 Player ${socket.id} joined room ${roomId}`);
+
+      // Notify the *other* player in the room that a new player has joined
+      socket.to(roomId).emit('playerJoined', { playerId: socket.id });
+
+      // Confirm with the joining player, sending the friendly room ID
+      socket.emit('joinedRoom', {
+        room: roomId,
+        playerId: 2
+      });
+    } else if (session) {
+      console.warn(`⚠️ Room ${roomId} is full. Player ${socket.id} cannot join.`);
+      socket.emit('roomFull');
     } else {
       console.warn(`⚠️ Attempted to join non-existent room: ${roomId}`);
-      // Optionally, emit an error back to the client
-      socket.emit('roomNotFound', { roomId });
+      socket.emit('roomNotFound');
     }
   });
 
@@ -216,7 +251,7 @@ io.on('connection', (socket) => {
     if (!session) return;
     
     // Most events are broadcasted, except for these specific ones
-    const broadcast = !['cardDetails'].includes(eventName);
+    const broadcast = !['cardDetails', 'boardState'].includes(eventName);
 
     // Log the action with its full data
     await logGameAction(session.id, socket.id, eventName.toUpperCase(), data, roomId);
@@ -243,33 +278,31 @@ io.on('connection', (socket) => {
 
   socket.on('deckLoaded', (data) => {
     const roomId = data.room || playerRooms.get(socket.id);
-    if (!roomId) return;
+    
+    if (!roomId) {
+      // Store deck data temporarily on the socket for when room is created
+      console.log(`📦 [DIAGNOSTIC] deckLoaded event received from player ${socket.id} without a room. Storing deck temporarily.`);
+      socket.pendingDeckData = data.deck || [];
+      return;
+    }
+
     const session = activeSessions.get(roomId);
     if (!session) return;
 
-    // The 'deckLoaded' event contains the full decklist. Store it on the session.
-    if (data.cards) {
-      session.decklist = data.cards;
+    // Check if we already processed deck setup for this session to ensure idempotency
+    if (session.deckSetupLogged) {
+      console.log(`⚠️ [DIAGNOSTIC] Deck setup already logged for room ${roomId}, ignoring duplicate deckLoaded event`);
+      return;
     }
 
-    // The 'data.deck' contains only the IDs, which is what we want to log for the initial state.
-    // We will simulate the initial draw to log it properly for the replay.
-    const fullDeck = [...data.deck];
-    const hand = fullDeck.splice(0, 7);
-    const prizes = fullDeck.splice(0, 6);
-    const deck = fullDeck;
-
-    const setupData = {
-      ...data,
-      hand,
-      prizes,
-      deck
-    };
+    // The 'data.deck' contains the full card objects, which is what we need.
+    const deck = data.deck || [];
     
-    handleAndLogEvent('deckSetup', setupData, socket);
-    // The deckLoaded event should be sent to the calling socket to setup its own board.
-    // The opponent will get board updates through other events.
-    socket.emit('deckLoaded', data);
+    // Mark that we've processed deck setup for this session
+    session.deckSetupLogged = true;
+    
+    // Log the setup action
+    handleAndLogEvent('deckSetup', { deck }, socket);
   });
   
   socket.on('cardsMoved', (data) => {
@@ -319,11 +352,25 @@ io.on('connection', (socket) => {
     handleAndLogEvent('boardState', data, socket);
   });
 
+  socket.on('deckSetup', (data) => {
+    handleAndLogEvent('deckSetup', data, socket);
+  });
+
+  socket.on('turnPassed', (data) => {
+    handleAndLogEvent('turnPassed', data, socket);
+  });
+
   // --- END REFACTORED GAME EVENT HANDLING ---
 
   // Handle disconnect
   socket.on('disconnect', async () => {
     const roomId = playerRooms.get(socket.id);
+    
+    // Clean up any pending deck data to prevent memory leaks
+    if (socket.pendingDeckData) {
+      console.log(`🧹 [DIAGNOSTIC] Cleaning up pending deck data for disconnected player ${socket.id}`);
+      delete socket.pendingDeckData;
+    }
     
     if (roomId) {
       const session = activeSessions.get(roomId);
@@ -402,58 +449,85 @@ app.get('/api/sessions/:roomId', async (req, res) => {
 
 // Get all sessions
 app.get('/api/sessions', async (req, res) => {
-  try {
-    const result = await pool.query(
-      'SELECT *, (SELECT COUNT(*) FROM game_actions WHERE session_id = game_sessions.id) as action_count FROM game_sessions ORDER BY start_time DESC'
-    );
-    res.json(result.rows);
-  } catch (error) {
-    console.error('API Error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+    try {
+        const result = await pool.query(
+            `SELECT id as session_id, room_id, start_time, game_state, action_count 
+             FROM game_sessions 
+             ORDER BY start_time DESC`
+        );
+        console.log('✅ [DIAGNOSTIC] Sending sessions to client:', JSON.stringify(result.rows, null, 2));
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error fetching sessions:', error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
 });
 
-// Replay API – returns latest (or capped) snapshot plus subsequent events
-// Example: GET /api/replay/K2YGLU?seq=120
-app.get('/api/replay/:sessionId', async (req, res) => {
-  const { sessionId } = req.params;
+// API endpoint to fetch replay data
+app.get('/api/replay/:roomId', async (req, res) => {
+    const { roomId } = req.params;
+    console.log(`✅ [DIAGNOSTIC] Replay requested for room: ${roomId}`);
 
-  try {
-    // 1. Find the session by its *friendly* session_id to get the internal UUID
-    const sessionResult = await pool.query('SELECT id FROM game_sessions WHERE session_id = $1', [sessionId]);
-    if (sessionResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Session not found' });
+    try {
+        // First, get the internal session ID (UUID) from the room ID
+        const sessionResult = await pool.query('SELECT id FROM game_sessions WHERE room_id = $1', [roomId]);
+        if (sessionResult.rows.length === 0) {
+            console.error(`❌ [DIAGNOSTIC] No session found for room: ${roomId}`);
+            return res.status(404).json({ message: "Session not found." });
+        }
+        const sessionId = sessionResult.rows[0].id;
+        console.log(`✅ [DIAGNOSTIC] Found session ID: ${sessionId}`);
+
+        // Fetch all game events for the session
+        const eventsResult = await pool.query(
+            `SELECT * FROM game_actions WHERE session_id = $1 ORDER BY sequence_number ASC`,
+            [sessionId]
+        );
+        const events = eventsResult.rows;
+        console.log(`✅ [DIAGNOSTIC] Found ${events.length} events.`);
+
+        if (events.length === 0) {
+            return res.status(404).json({ message: "No events found for this session." });
+        }
+
+        // Try to fetch deck from DECKSETUP first, then fallback to extracting from BOARDSTATE
+        let deck = [];
+        const deckResult = await pool.query(
+            `SELECT action_data -> 'deck' as deck FROM game_actions 
+             WHERE session_id = $1 AND action_type = 'DECKSETUP' 
+             ORDER BY sequence_number ASC LIMIT 1`,
+            [sessionId]
+        );
+        
+        if (deckResult.rows.length > 0 && deckResult.rows[0].deck) {
+            deck = deckResult.rows[0].deck;
+            console.log(`✅ [DIAGNOSTIC] Found deck from DECKSETUP: ${deck.length} cards`);
+        } else {
+            // Fallback: try to extract card IDs from BOARDSTATE events
+            console.log(`⚠️ [DIAGNOSTIC] No DECKSETUP found, attempting to extract from BOARDSTATE...`);
+            // For now, we'll work with empty deck and let client handle it gracefully
+        }
+
+        // Fetch the latest snapshot
+        const snapshotResult = await pool.query(
+            `SELECT snapshot_data FROM game_snapshots 
+             WHERE session_id = $1 ORDER BY sequence_no DESC LIMIT 1`,
+            [sessionId]
+        );
+        const snapshot = snapshotResult.rows.length > 0 ? snapshotResult.rows[0].snapshot_data : null;
+        console.log(`✅ [DIAGNOSTIC] Found snapshot: ${snapshot ? 'Yes' : 'No'}`);
+
+        res.json({
+            sessionId,
+            events,
+            deck,
+            snapshot
+        });
+
+    } catch (error) {
+        console.error(`❌ [DIAGNOSTIC] Error fetching replay for room ${roomId}:`, error);
+        res.status(500).json({ message: 'Internal Server Error' });
     }
-    const dbSessionId = sessionResult.rows[0].id;
-
-    // 2. Fetch all events for that session using the correct internal UUID
-    const eventsResult = await pool.query(
-      'SELECT * FROM game_actions WHERE session_id = $1 ORDER BY sequence_number ASC',
-      [dbSessionId]
-    );
-
-    // 3. Fetch the latest snapshot for that session (if any)
-    const snapshotResult = await pool.query(
-      `SELECT snapshot_data as board FROM game_snapshots 
-       WHERE session_id = $1 ORDER BY sequence_no DESC LIMIT 1`,
-      [dbSessionId]
-    );
-
-    // 4. Fetch the decklist associated with the session
-    const deckResult = await pool.query(
-        'SELECT deck_data FROM game_players WHERE session_id = $1 LIMIT 1',
-        [dbSessionId]
-    );
-
-    res.json({
-      events: eventsResult.rows,
-      snapshot: snapshotResult.rows[0] || null,
-      deck: deckResult.rows[0]?.deck_data || []
-    });
-  } catch (error) {
-    console.error(`❌ Error fetching replay for session ${sessionId}:`, error.message);
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
 });
 
 // Graceful shutdown
@@ -483,4 +557,9 @@ server.listen(PORT, () => {
   console.log(`🚀 Pokemon TCG Enhanced Logging Server running on port ${PORT}`);
   console.log(`🗄️  Using PostgreSQL database`);
   console.log(`🌐 API available at: http://localhost:${PORT}/api/sessions`);
-}); 
+});
+
+// --- Helper Functions ---
+function generateRoomId() {
+  return Math.random().toString(36).substring(2, 8).toUpperCase();
+} 

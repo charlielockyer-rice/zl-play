@@ -10,6 +10,7 @@ import {
    logBenched, logPromoted, logStadium,
    logAttachment, logEvolve
 } from './logger.js'
+import { storable } from './custom/storable.js'
 
 export const {
    cards, deck, hand, prizes, discard, lz,
@@ -19,37 +20,25 @@ export const {
    reset, exportBoard, findSlot
 } = board()
 
-export function importDeck (txt, cb, rd = false) {
-   const callback = async (res) => {
-      fixOld(res.cards)
-      cards.set(res.cards)
-      reset()
+export const deckName = storable('deckName', null)
 
-      // Log deck import to game session
-      try {
-         const { gameSession } = await import('./gameSession.js')
-         const playerId = get(gameSession).playerId;
-         if (!playerId) {
-            console.error("Cannot log deck import: player ID not found in game session.");
-            return;
-         }
-         gameSession.setPlayerDeck(playerId, res.cards, res.name || 'Imported Deck')
-         gameSession.logAction(playerId, 'deckImported', {
-            deckName: res.name || 'Imported Deck',
-            cardCount: res.cards.reduce((sum, card) => sum + card.count, 0),
-            isRandom: rd
-         })
-      } catch (e) {
-         // Silently fail if game session not available
-      }
-
-      cb(res)
-      share('deckLoaded', { deck: res.cards })
-      publishLog(rd ? 'random deck ⚆ _ ⚆' : 'Imported deck')
-   }
-
-   if (rd) get('/api/dm/random', callback)
-   else post(`/api/dm/import`, { input: txt }, callback)
+export function importDeck(deck, name) {
+	const newCards = [];
+	for (const card of deck) {
+		for (let i = 0; i < card.count; i++) {
+			// Remove the count property to avoid re-expansion in loadDeck
+			const { count, ...cardWithoutCount } = card;
+			newCards.push(cardWithoutCount);
+		}
+	}
+	cards.set(newCards);
+	deckName.set(name);
+	
+	// Send deck setup event for replay logging
+	share('deckSetup', { deck: deck }); // Send original deck with counts for database
+	
+	// Load the deck into the deck pile immediately so it's visible
+	reset();
 }
 
 export function draw (count = 1, setup = false) {

@@ -28,7 +28,9 @@ export function board () {
       let j = 1
       deck.clear()
       for (const card of cards.get()) {
-         for (let i = 1; i <= card.count; i++) {
+         // If card has a count property, expand it; otherwise it's already an individual card
+         const count = card.count || 1;
+         for (let i = 1; i <= count; i++) {
             const c = copy(card, [ 'count' ])
             c._id = j++ // the cards individual "id" for the playtest session
             deck.push(c)
