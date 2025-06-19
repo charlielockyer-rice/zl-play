@@ -15,3 +15,14 @@
       </div>
    </Horizontal>
 </div>
+
+<style>
+   .hand-container {
+      height: 100%;
+      overflow: hidden; /* Prevent cards from extending beyond grid area */
+      display: flex;
+      align-items: center; /* Center cards vertically within the hand area */
+      justify-content: center; /* Center the horizontal scroll container */
+      padding: 0.5rem 0; /* Add vertical padding for separation from edges */
+   }
+</style>

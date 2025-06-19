@@ -2,7 +2,6 @@
   import { onMount, setContext } from 'svelte';
   import { page } from '$app/stores';
   import Board from '$lib/replay/view/Board.svelte';
-  import Controls from '$lib/replay/view/Controls.svelte';
   import { replayState } from '$lib/stores/replayState.js';
   import { createReplayReducer } from '$lib/replay/reducer.js';
 
@@ -67,6 +66,27 @@
       stateChangingEvents
           .slice(0, currentActionIndex + 1)
           .filter((e) => e.action_type.toUpperCase() === 'TURNPASSED').length;
+
+  // Get chat messages that have occurred up to the current action
+  $: currentMessages = (() => {
+    if (!allEvents.length || !stateChangingEvents.length) return [];
+    
+    // Find the sequence number of the current action
+    const currentEvent = stateChangingEvents[currentActionIndex];
+    const currentSequence = currentEvent ? currentEvent.sequence_number : 0;
+    
+    // Get all chat messages up to this sequence number
+    return allEvents
+      .filter(e => e.action_type === 'CHATMESSAGE' && e.sequence_number <= currentSequence)
+      .map(e => ({
+        ...e,
+        // Assign a rough turn number based on preceding TURNPASSED events
+        turn: 1 + allEvents
+          .filter(prev => prev.sequence_number <= e.sequence_number && prev.action_type === 'TURNPASSED')
+          .length
+      }))
+      .slice(-10); // Show only the last 10 messages to avoid clutter
+  })();
 
   onMount(async () => {
     try {
@@ -162,14 +182,6 @@
             <p class="error">Could not load replay: {error}</p>
         </div>
     {:else if sessionData}
-        <!-- Fixed header with session info -->
-        <div class="replay-header">
-            <div class="session-info">
-                <h1>Game Replay</h1>
-                <p>Session: {$page.params.sessionId}</p>
-            </div>
-        </div>
-
         <!-- Main game area with fixed sidebar -->
         <div class="game-wrapper">
             <!-- Fixed sidebar with controls -->
@@ -191,15 +203,32 @@
                     </div>
                 </div>
 
-                <!-- Game info panel -->
+                <!-- Chat messages panel -->
                 <div class="game-info">
-                    <Controls turn={currentTurn} />
+                    <div class="chat-messages">
+                        <h4>Game Log</h4>
+                        <div class="messages-container">
+                            {#each currentMessages as message (message.sequence_number)}
+                                <div class="message-item">
+                                    <span class="message-text">{message.action_data.message}</span>
+                                    <span class="message-meta">Turn {message.turn || '?'}</span>
+                                </div>
+                            {/each}
+                            {#if currentMessages.length === 0}
+                                <div class="no-messages">No messages at this point in the game</div>
+                            {/if}
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Fixed board area -->
+            <!-- Fixed aspect-ratio board area -->
             <div class="board-container">
-                <Board />
+                <div class="board-viewport">
+                    <div class="board-content">
+                        <Board />
+                    </div>
+                </div>
             </div>
         </div>
     {:else}
@@ -227,29 +256,15 @@
         height: 100vh;
     }
 
-    .replay-header {
-        background: white;
-        border-bottom: 1px solid #ddd;
-        padding: 0.75rem 1rem;
-        z-index: 20;
-        flex-shrink: 0;
-    }
 
-    .session-info h1 {
-        margin: 0;
-        font-size: 1.25rem;
-    }
-
-    .session-info p {
-        margin: 0.25rem 0 0;
-        font-size: 0.8rem;
-        color: #666;
-    }
 
     .game-wrapper {
         display: flex;
         flex: 1;
         min-height: 0;
+        margin: 0; /* Ensure no margins interfere */
+        padding-bottom: 1rem; /* Create space at bottom for gray border */
+        box-sizing: border-box;
     }
 
     .sidebar {
@@ -315,25 +330,146 @@
         overflow-y: auto;
     }
 
+    .chat-messages h4 {
+        margin: 0 0 0.75rem 0;
+        font-size: 1rem;
+        color: #333;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 0.5rem;
+    }
+
+    .messages-container {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        max-height: calc(100% - 3rem);
+        overflow-y: auto;
+    }
+
+    .message-item {
+        padding: 0.5rem;
+        background: #f8f9fa;
+        border-radius: 6px;
+        border-left: 3px solid #007bff;
+    }
+
+    .message-text {
+        display: block;
+        font-size: 0.875rem;
+        color: #333;
+        margin-bottom: 0.25rem;
+    }
+
+    .message-meta {
+        font-size: 0.75rem;
+        color: #666;
+        font-style: italic;
+    }
+
+    .no-messages {
+        text-align: center;
+        color: #999;
+        font-style: italic;
+        padding: 2rem 1rem;
+        font-size: 0.875rem;
+    }
+
     .board-container {
         flex: 1;
-        position: relative;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 0.5rem 0.5rem 2rem 0.5rem; /* Reduce top/left/right padding to match bottom's visual appearance */
         min-width: 0;
-        overflow: hidden;
+        min-height: 0; /* Allow flex shrinking */
+        overflow: auto; /* Allow scrolling if needed */
+        background-color: #f8f9fa; /* This is the gray background that shows as "border" */
     }
 
-    .board-container :global(.game) {
+    .board-viewport {
+        /* Fixed aspect ratio container - wider 8:5 ratio for better card visibility */
+        /* Don't take full width/height - let the padding show as gray border */
+        width: calc(100% - 1rem); /* Account for 0.5rem padding on each side */
+        height: calc(100% - 3.5rem); /* Account for 0.5rem top + 3rem bottom padding (1rem game-wrapper + 2rem board-container) */
+        max-width: calc(100% - 1rem);
+        max-height: calc(100% - 3.5rem);
+        aspect-ratio: 8 / 5;
+        position: relative;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        overflow: hidden; /* Prevent cards from escaping the container */
+        transition: all 0.3s ease;
+        container-type: size; /* Enable container queries for responsive card sizing */
+    }
+
+    .board-content {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
         height: 100%;
-        max-height: 100vh;
+        /* Very minimal internal padding */
+        padding: 0.125rem;
+        box-sizing: border-box;
     }
 
-    .board-container :global(.gameboard) {
-        height: calc(100vh - 60px); /* Account for header */
-        max-height: calc(100vh - 60px);
+    /* Override board component styles to fit the container */
+    .board-content :global(.board-wrapper) {
+        height: 100%;
+        width: 100%;
+        overflow: hidden; /* Prevent content from escaping the board */
+    }
+
+    .board-content :global(.game) {
+        height: 100%;
+        width: 100%;
+        max-width: none;
+        overflow: hidden; /* Prevent cards from extending outside game area */
+        /* Dynamic card sizing - card height = 10% of container height */
+        /* Fallback for browsers without container query support */
+        --card-height: clamp(60px, 12vh, 150px);
+        --card-width: calc(var(--card-height) * 0.72);
+    }
+
+    /* Container query for responsive card sizing (modern browsers) */
+    @container (min-height: 200px) {
+        .board-content :global(.game) {
+            --card-height: clamp(60px, 15cqh, 150px); /* 15% of container height */
+            --card-width: calc(var(--card-height) * 0.72); /* Maintain card aspect ratio */
+        }
+    }
+
+    .board-content :global(.gameboard) {
+        height: 100%;
+        width: 100%;
+        /* Remove extra padding - parent already has padding */
+        padding: 0;
+        box-sizing: border-box;
     }
 
     .error {
         color: red;
         font-weight: bold;
+    }
+
+    /* Responsive adjustments for smaller screens */
+    @media (max-width: 768px) {
+        .game-wrapper {
+            flex-direction: column;
+        }
+        
+        .sidebar {
+            width: 100%;
+            height: auto;
+            order: 2;
+        }
+        
+        .board-container {
+            order: 1;
+            flex: 0 0 auto;
+            height: 60vh; /* Increase height for mobile */
+            padding: 0.25rem; /* Consistent minimal padding on mobile */
+        }
     }
 </style>

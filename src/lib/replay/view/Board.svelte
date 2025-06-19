@@ -138,15 +138,16 @@
 
    .gameboard {
       display: grid;
-      grid-template-columns: 0.8fr 0.8fr 1fr 1.5fr 1fr 0.8fr 0.8fr;
-      grid-template-rows: 0.9fr 1fr 1fr 1fr 1fr 0.9fr;
+      /* Use minmax to ensure stable minimum sizes while allowing some flexibility */
+      grid-template-columns: minmax(80px, 0.8fr) minmax(80px, 0.8fr) minmax(100px, 1fr) minmax(120px, 1.5fr) minmax(100px, 1fr) minmax(80px, 0.8fr) minmax(80px, 0.8fr);
+      grid-template-rows: minmax(calc(var(--card-height) + 1rem), 1fr) minmax(100px, 1fr) minmax(100px, 1fr) minmax(100px, 1fr) minmax(100px, 1fr) minmax(calc(var(--card-height) + 1rem), 1fr);
       grid-template-areas:
-         "hand2 hand2 hand2 hand2 hand2 hand2 hand2"
+         ". hand2 hand2 hand2 hand2 hand2 ."
          ". discard2 bench2 bench2 bench2 prizes2 prizes2"
          "lz2 deck2 stadium active play prizes2 prizes2"
          "prizes prizes stadium active play deck lz"
          "prizes prizes bench bench bench discard ."
-         "hand hand hand hand hand hand hand";
+         ". hand hand hand hand hand .";
       gap: 0.5rem;
       height: 100%;
       padding: 0.5rem;

@@ -251,7 +251,10 @@ io.on('connection', (socket) => {
     if (!session) return;
     
     // Most events are broadcasted, except for these specific ones
-    const broadcast = !['cardDetails', 'boardState'].includes(eventName);
+    // boardState with 'seq' property is for server snapshots (don't broadcast)
+    // boardState without 'seq' is for live multiplayer sync (do broadcast)
+    const isSnapshotEvent = eventName === 'boardState' && typeof data.seq === 'number';
+    const broadcast = !['cardDetails'].includes(eventName) && !isSnapshotEvent;
 
     // Log the action with its full data
     await logGameAction(session.id, socket.id, eventName.toUpperCase(), data, roomId);

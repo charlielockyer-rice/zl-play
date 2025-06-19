@@ -18,8 +18,5 @@
 
 
 <style>
-   .prizes {
-      --card-width: 95px;
-      --card-height: 132px;
-   }
+   /* Prize cards now inherit responsive sizing from parent container */
 </style>
