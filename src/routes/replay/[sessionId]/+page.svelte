@@ -232,6 +232,12 @@
           updateStateToIndex(newIndex);
       }
   }
+
+  function handleScrub() {
+      // currentActionIndex is already updated by the bind:value
+      console.log(`[REPLAY] Scrubbing to action ${currentActionIndex}`);
+      updateStateToIndex(currentActionIndex);
+  }
 </script>
 
 <svelte:head>
@@ -259,6 +265,26 @@
                             Next →
                         </button>
                     </div>
+                    
+                    <!-- Scrub bar -->
+                    <div class="scrub-bar-container">
+                        <div class="scrub-bar-label">
+                            <span>Scrub through replay</span>
+                        </div>
+                        <div class="scrub-bar">
+                            <input 
+                                type="range" 
+                                bind:value={currentActionIndex} 
+                                min="0" 
+                                max={Math.max(0, stateChangingEvents.length - 1)} 
+                                step="1" 
+                                class="scrub-slider"
+                                on:input={handleScrub}
+                            >
+                            <div class="scrub-progress" style="width: {stateChangingEvents.length > 0 ? (currentActionIndex / (stateChangingEvents.length - 1)) * 100 : 0}%"></div>
+                        </div>
+                    </div>
+                    
                     <div class="action-info">
                         <span>Action {currentActionIndex + 1} of {stateChangingEvents.length}</span>
                         <span>
@@ -386,6 +412,76 @@
     .control-buttons button:disabled {
         background-color: #aaa;
         cursor: not-allowed;
+    }
+
+    /* Scrub bar styles */
+    .scrub-bar-container {
+        margin: 1rem 0;
+        padding: 0.5rem 0;
+        border-top: 1px solid #eee;
+        border-bottom: 1px solid #eee;
+    }
+
+    .scrub-bar-label {
+        font-size: 0.875rem;
+        color: #666;
+        margin-bottom: 0.5rem;
+        text-align: center;
+    }
+
+    .scrub-bar {
+        position: relative;
+        height: 8px;
+        background: #e9ecef;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .scrub-slider {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: transparent;
+        outline: none;
+        cursor: pointer;
+        -webkit-appearance: none;
+        appearance: none;
+        z-index: 2;
+    }
+
+    .scrub-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #007bff;
+        cursor: pointer;
+        border: 2px solid white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .scrub-slider::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #007bff;
+        cursor: pointer;
+        border: 2px solid white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .scrub-progress {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        background: linear-gradient(90deg, #007bff 0%, #0056b3 100%);
+        border-radius: 4px;
+        transition: width 0.1s ease;
+        z-index: 1;
     }
 
     .action-info {

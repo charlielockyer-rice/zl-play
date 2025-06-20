@@ -14,6 +14,7 @@ const server = createServer(app);
 app.use(cors({
   origin: [
     process.env.CLIENT_URL || "http://localhost:5173",
+    "http://localhost:3005", // Add support for custom dev port
     /\.vercel\.app$/
   ],
   credentials: true
@@ -44,6 +45,7 @@ const io = new Server(server, {
   cors: {
     origin: [
       process.env.CLIENT_URL || "http://localhost:5173",
+      "http://localhost:3005", // Add support for custom dev port
       /\.vercel\.app$/
     ],
     methods: ["GET", "POST"],
