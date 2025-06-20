@@ -359,6 +359,10 @@ io.on('connection', (socket) => {
     handleAndLogEvent('deckSetup', data, socket);
   });
 
+  socket.on('turnStarted', (data) => {
+    handleAndLogEvent('turnStarted', data, socket);
+  });
+
   socket.on('turnPassed', (data) => {
     handleAndLogEvent('turnPassed', data, socket);
   });

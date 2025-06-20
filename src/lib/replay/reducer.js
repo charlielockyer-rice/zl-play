@@ -173,12 +173,26 @@ export function createReplayReducer(cardMap, playerIdMap = new Map()) {
                 
                 // Convert card number arrays to card objects and handle deck count properly
                 const convertedBoard = {
-                    // Preserve real deck cards if they exist, otherwise use placeholders
-                    deck: hasRealDeckCards 
-                        ? newState[targetPlayer].deck 
-                        : (boardData.deck && typeof boardData.deck === 'object' && boardData.deck.count 
-                            ? new Array(boardData.deck.count).fill({ id: 'deck_card', name: 'Deck Card' })
-                            : resolveCards(boardData.deck, cardMap)),
+                    // For deck: preserve real cards if we have them, but adjust count based on BOARDSTATE
+                    deck: (() => {
+                        if (hasRealDeckCards) {
+                            // If BOARDSTATE provides a count, adjust our real deck to match that count
+                            if (boardData.deck && typeof boardData.deck === 'object' && boardData.deck.count) {
+                                const targetCount = boardData.deck.count;
+                                const currentDeck = newState[targetPlayer].deck;
+                                // Adjust deck size to match BOARDSTATE count (trim excess or keep as-is)
+                                return currentDeck.slice(0, targetCount);
+                            }
+                            // Otherwise preserve the full real deck
+                            return newState[targetPlayer].deck;
+                        } else {
+                            // No real cards yet, use BOARDSTATE data
+                            return boardData.deck && typeof boardData.deck === 'object' && boardData.deck.count 
+                                ? new Array(boardData.deck.count).fill({ id: 'deck_card', name: 'Deck Card' })
+                                : resolveCards(boardData.deck, cardMap);
+                        }
+                    })(),
+                    // For other piles: always resolve from BOARDSTATE using the cardMap (which has real cards from DECKSETUP)
                     hand: resolveCards(boardData.hand, cardMap),
                     discard: resolveCards(boardData.discard, cardMap),
                     lostzone: resolveCards(boardData.lz, cardMap), // Map 'lz' to 'lostzone'
@@ -376,6 +390,7 @@ export function createReplayReducer(cardMap, playerIdMap = new Map()) {
                 break;
             }
 
+            case 'TURNSTARTED':
             case 'TURNPASSED':
             case 'GAMESTARTED':
             case 'GAMEWON':

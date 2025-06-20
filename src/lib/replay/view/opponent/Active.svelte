@@ -5,10 +5,22 @@
 	$: active = $replayState?.opponent?.active || null;
 </script>
 
-{#if active}
-	<Slot slot={active} />
-{:else}
-	<div class="empty-active">
-		<!-- Empty active slot -->
-	</div>
-{/if}
+<div class="active-container">
+	{#if active}
+		<Slot slot={active} />
+	{:else}
+		<div class="empty-active">
+			<!-- Empty active slot -->
+		</div>
+	{/if}
+</div>
+
+<style>
+	.active-container {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		width: 100%;
+		height: 100%;
+	}
+</style>

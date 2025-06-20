@@ -92,6 +92,7 @@
    function startTurn() {
       turn++
       draw()
+      share('turnStarted', { turnNumber: turn })
    }
 
    function keydown(e) {

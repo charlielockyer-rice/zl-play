@@ -15,12 +15,18 @@
   let error = null;
   let replayReducer;
   let currentState;
+  let cardScale = 1.0; // Default card scale
 
   const emptyBoard = {
       player: { deck: [], hand: [], discard: [], lostzone: [], active: null, bench: [], prizes: [] },
       opponent: { deck: [], hand: [], discard: [], lostzone: [], active: null, bench: [], prizes: [] }
   };
   let initialState = emptyBoard;
+
+  // Update CSS variables when card scale changes
+  $: if (typeof document !== 'undefined') {
+    document.documentElement.style.setProperty('--card-scale', cardScale.toString());
+  }
 
   // Remove the inefficient reactive statement and replace with proper state management
   function updateStateToIndex(targetActionIndex) {
@@ -61,11 +67,66 @@
     return !nonStateEvents.includes(actionType);
   }
 
-  $: currentTurn =
-      1 +
-      stateChangingEvents
-          .slice(0, currentActionIndex + 1)
-          .filter((e) => e.action_type.toUpperCase() === 'TURNPASSED').length;
+  // Calculate current turn info based on TURNSTARTED events
+  $: currentTurnInfo = (() => {
+    // Debug: Log all available action types
+    const allActionTypes = allEvents.map(e => e.action_type).filter((v, i, a) => a.indexOf(v) === i);
+    console.log('[TURN DEBUG] All action types in events:', allActionTypes);
+    
+    const turnEvents = stateChangingEvents
+      .slice(0, currentActionIndex + 1)
+      .filter((e) => {
+        const actionType = e.action_type.toUpperCase();
+        return actionType === 'TURNSTARTED' || actionType === 'TURNPASSED' || 
+               actionType === 'TURN_STARTED' || actionType === 'TURN_PASSED';
+      });
+    
+    console.log('[TURN DEBUG] Found turn events:', turnEvents.map(e => ({ 
+      type: e.action_type, 
+      player: getPlayerName(e.player_id),
+      playerSocket: e.player_id,
+      data: e.action_data 
+    })));
+    
+    // Find turn start events
+    const turnStartEvents = turnEvents.filter(e => e.action_type.toUpperCase() === 'TURNSTARTED');
+    
+    // If no turns have started yet, show "Setup"
+    if (turnStartEvents.length === 0) {
+      return { player: null, turn: 0, isSetup: true };
+    }
+    
+    const lastTurnEvent = turnStartEvents[turnStartEvents.length - 1];
+    const currentPlayer = getPlayerName(lastTurnEvent.player_id);
+    
+    // Calculate which turn this is for the current player (their personal turn count)
+    const currentPlayerTurnCount = turnStartEvents
+      .filter(e => getPlayerName(e.player_id) === currentPlayer)
+      .length;
+    
+    console.log('[TURN DEBUG] Current player:', currentPlayer, 'Player turn count:', currentPlayerTurnCount, 'Total game turns:', turnStartEvents.length);
+    
+    return {
+      player: currentPlayer,
+      turn: currentPlayerTurnCount,
+      isSetup: false
+    };
+  })();
+
+  // Helper function to get player name from ID
+  function getPlayerName(playerId) {
+    if (!playerId) return 'Player 1';
+    
+    // Use the playerIdMap created by the reducer to get consistent mapping
+    const playerRole = playerIdMap.get(playerId);
+    if (playerRole === 'player') return 'Player 1';
+    if (playerRole === 'opponent') return 'Player 2';
+    
+    // Fallback: first player we see becomes Player 1, second becomes Player 2
+    const allPlayerIds = [...new Set(allEvents.map(e => e.player_id).filter(Boolean))];
+    const playerIndex = allPlayerIds.indexOf(playerId);
+    return playerIndex === 0 ? 'Player 1' : 'Player 2';
+  }
 
   // Get chat messages that have occurred up to the current action
   $: currentMessages = (() => {
@@ -198,8 +259,23 @@
                     </div>
                     <div class="action-info">
                         <span>Action {currentActionIndex + 1} of {stateChangingEvents.length}</span>
-                        <span>Turn {currentTurn}</span>
+                        <span>
+                            {#if currentTurnInfo.isSetup}
+                                Setup
+                            {:else}
+                                {currentTurnInfo.player} - Turn {currentTurnInfo.turn}
+                            {/if}
+                        </span>
                         <span class="event-detail">{allEvents.length} total events logged</span>
+                    </div>
+                </div>
+
+                <!-- Card size control -->
+                <div class="card-size-control">
+                    <h4>Card Size</h4>
+                    <div class="slider-container">
+                        <input type="range" bind:value={cardScale} min="0.5" max="1.5" step="0.1" class="card-size-slider">
+                        <span class="scale-value">{Math.round(cardScale * 100)}%</span>
                     </div>
                 </div>
 
@@ -372,6 +448,60 @@
         font-style: italic;
         padding: 2rem 1rem;
         font-size: 0.875rem;
+    }
+
+    .card-size-control {
+        padding: 1rem;
+        border-bottom: 1px solid #eee;
+        background: white;
+    }
+
+    .card-size-control h4 {
+        margin: 0 0 0.75rem 0;
+        font-size: 1rem;
+        color: #333;
+        padding-bottom: 0.5rem;
+    }
+
+    .slider-container {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .card-size-slider {
+        flex: 1;
+        height: 6px;
+        border-radius: 3px;
+        background: #ddd;
+        outline: none;
+        cursor: pointer;
+    }
+
+    .card-size-slider::-webkit-slider-thumb {
+        appearance: none;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #007bff;
+        cursor: pointer;
+    }
+
+    .card-size-slider::-moz-range-thumb {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #007bff;
+        cursor: pointer;
+        border: none;
+    }
+
+    .scale-value {
+        font-size: 0.875rem;
+        color: #666;
+        min-width: 40px;
+        text-align: center;
+        font-weight: 600;
     }
 
     .board-container {
