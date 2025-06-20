@@ -1,7 +1,13 @@
 {
   "buildCommand": "npm run build",
-  "outputDirectory": ".svelte-kit",
+  "outputDirectory": "build",
   "installCommand": "npm ci",
   "framework": "sveltekit",
-  "regions": ["iad1"]
+  "regions": ["iad1"],
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
 } 
