@@ -11,7 +11,13 @@ const app = express();
 const server = createServer(app);
 
 // Enable CORS for all routes
-app.use(cors());
+app.use(cors({
+  origin: [
+    process.env.CLIENT_URL || "http://localhost:5173",
+    /\.vercel\.app$/
+  ],
+  credentials: true
+}));
 app.use(express.json());
 
 // Database connection
@@ -36,8 +42,12 @@ pool.connect()
 // Socket.IO setup
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
-    methods: ["GET", "POST"]
+    origin: [
+      process.env.CLIENT_URL || "http://localhost:5173",
+      /\.vercel\.app$/
+    ],
+    methods: ["GET", "POST"],
+    credentials: true
   }
 });
 
