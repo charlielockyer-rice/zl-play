@@ -1,4 +1,4 @@
-import adapter from '@sveltejs/adapter-vercel'
+import adapter from '@sveltejs/adapter-static'
 import 'dotenv/config'
 
 /** @type {import('@sveltejs/kit').Config} */
