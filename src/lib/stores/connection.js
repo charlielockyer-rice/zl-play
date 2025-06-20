@@ -1,4 +1,4 @@
-const server = 'http://localhost:3001'
+const server = import.meta.env.VITE_PVP_SERVER || 'http://localhost:3001'
 
 import { writable } from './custom/writable.js'
 import { io } from 'socket.io-client'
