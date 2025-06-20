@@ -5,6 +5,8 @@
   import { replayState } from '$lib/stores/replayState.js';
   import { createReplayReducer } from '$lib/replay/reducer.js';
 
+  const serverUrl = import.meta.env.VITE_PVP_SERVER || 'http://localhost:3001';
+
   // export let data; // No longer needed, we will fetch data client-side
   let sessionData;
   let allEvents = []; // All events from the database
@@ -151,7 +153,7 @@
 
   onMount(async () => {
     try {
-      const response = await fetch(`http://localhost:3001/api/replay/${$page.params.sessionId}`);
+      const response = await fetch(`${serverUrl}/api/replay/${$page.params.sessionId}`);
       if (!response.ok) {
         throw new Error(`Failed to fetch replay data: ${response.statusText}`);
       }

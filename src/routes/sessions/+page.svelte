@@ -1,12 +1,14 @@
 <script>
   import { onMount } from 'svelte';
 
+  const serverUrl = import.meta.env.VITE_PVP_SERVER || 'http://localhost:3001';
+  
   let sessions = [];
   let error = null;
 
   onMount(async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/sessions');
+      const response = await fetch(`${serverUrl}/api/sessions`);
       if (!response.ok) {
         throw new Error('Failed to fetch sessions');
       }
